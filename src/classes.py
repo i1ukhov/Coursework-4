@@ -54,7 +54,7 @@ class HeadHunterAPI(APIBase):
     def save_vacancies(self, query):
         """Сохранить вакансии в json-файл"""
         get_vacancies_data = self.get_vacancies(query)
-        if get_vacancies_data is not None and get_vacancies_data != []:
+        if get_vacancies_data is not None and get_vacancies_data != [] and isinstance(get_vacancies_data, list):
             file_path = os.path.join("..", "data", "vacancies.json")
             with open(file_path, 'w+', encoding='utf-8') as f:
                 vacancies_json = json.dumps(get_vacancies_data, ensure_ascii=False)
