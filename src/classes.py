@@ -140,6 +140,21 @@ class Vacancies:
         else:
             return 'Переданы не объекты класса Vacancies'
 
+    class FileManager(ABC):
+        """Абстрактный класс для работы с файлами"""
+
+        @abstractmethod
+        def add_vacancy(self):
+            pass
+
+        @abstractmethod
+        def delete_vacancy(self):
+            pass
+
+        @abstractmethod
+        def save_to_file_list_of_vacancies(self, vacancies, filename):
+            pass
+
 
 # hh = HeadHunterAPI()
 # for v in hh.get_vacancies('Python')[0:4]:
