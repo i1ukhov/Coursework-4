@@ -148,11 +148,19 @@ class Vacancies:
             pass
 
         @abstractmethod
-        def delete_vacancy(self):
+        def delete_vacancy_by_name(self, name):
             pass
 
         @abstractmethod
         def save_to_file_list_of_vacancies(self, vacancies, filename):
+            pass
+
+        @abstractmethod
+        def get_from_file_by_salary(self, salary, filename):
+            pass
+
+        @abstractmethod
+        def get_all_from_file(self, filename):
             pass
 
 
