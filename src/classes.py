@@ -15,7 +15,7 @@ class APIBase(ABC):
         pass
 
     @abstractmethod
-    def save_vacancies(self, query):
+    def save_vacancies(self, query, filename):
         pass
 
 
@@ -54,14 +54,14 @@ class HeadHunterAPI(APIBase):
         else:
             print(f'{query} - некорректный запрос. Введите корректное название вакансии')
 
-    def save_vacancies(self, query):
+    def save_vacancies(self, query, filename):
         """Сохранить вакансии в json-файл"""
         get_vacancies_data = self.get_vacancies(query)
         if get_vacancies_data is not None and get_vacancies_data != [] and isinstance(get_vacancies_data, list):
-            file_path = os.path.join("..", "data", "vacancies.json")
-            with open(file_path, 'w+', encoding='utf-8') as f:
+            file_path = os.path.join("..", "data", f"{filename}")
+            with open(file_path, 'w+', encoding='utf-8') as file:
                 vacancies_json = json.dumps(get_vacancies_data, ensure_ascii=False)
-                f.write(vacancies_json)
+                file.write(vacancies_json)
                 print('Вакансии записаны в файл в папку data')
         else:
             print('Нет данных для сохранения. Файл не был создан')
@@ -74,7 +74,7 @@ class Vacancies:
     salary_from: int or float or str
     salary_to: int or float or str
     currency: str
-    description: str
+    responsibility: str
     requirements: str
 
     def __init__(self, name, url, salary_from, salary_to, currency, responsibility, requirements):
@@ -140,40 +140,149 @@ class Vacancies:
         else:
             return 'Переданы не объекты класса Vacancies'
 
-    class FileManager(ABC):
-        """Абстрактный класс для работы с файлами"""
+    @property
+    def formatted_vacancy(self):
+        return {'name': self.name, 'url': self.url, 'salary': {'to': self.salary_to,
+                                                               'from': self.salary_from,
+                                                               'currency': self.currency},
+                'snippet': {'responsibility': self.responsibility, 'requirement': self.requirements}}
 
-        @abstractmethod
-        def add_vacancy(self):
-            pass
 
-        @abstractmethod
-        def delete_vacancy_by_name(self, name):
-            pass
+class FileManager(ABC):
+    """Абстрактный класс для работы с файлами"""
 
-        @abstractmethod
-        def save_to_file_list_of_vacancies(self, vacancies, filename):
-            pass
+    @staticmethod
+    @abstractmethod
+    def add_vacancy(vacancy, filename):
+        pass
 
-        @abstractmethod
-        def get_from_file_by_salary(self, salary, filename):
-            pass
+    @staticmethod
+    @abstractmethod
+    def delete_vacancy_by_name(name, filename):
+        pass
 
-        @abstractmethod
-        def get_all_from_file(self, filename):
-            pass
+    @abstractmethod
+    def save_to_file_list_of_vacancies(self, vacancies, filename):
+        pass
 
+    @abstractmethod
+    def get_from_file_filtered_by_salary(self, salary, filename):
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def get_all_from_file(filename):
+        pass
+
+
+class FileManagerJSON(FileManager):
+    """Класс для работы с файлами JSON"""
+
+    def __repr__(self):
+        return f'Объект класса {self.__class__.__name__}'
+
+    @staticmethod
+    def add_vacancy(vacancy, filename):
+        """Функция добавления вакансии в файл. Если файла нет, создается новый"""
+        if isinstance(vacancy, Vacancies):
+            file_path = os.path.join("..", "data", f"{filename}")
+            try:
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    data = file.read()
+                    vacancies_list = json.loads(data)
+                    new_vacancy = [vacancy.formatted_vacancy]
+                    vacancies_list.extend(new_vacancy)
+                with open(file_path, 'w', encoding='utf-8') as fi:
+                    vacancies_json = json.dumps(vacancies_list, ensure_ascii=False)
+                    fi.write(vacancies_json)
+                    print('Вакансии записаны в файл в папку data')
+            except FileNotFoundError:
+                with open(file_path, 'a+', encoding='utf-8') as file:
+                    print(f'Файла {filename} не существует. Будет создан новый файл.')
+                    vacancies_json = json.dumps([vacancy.formatted_vacancy], ensure_ascii=False)
+                    file.write(vacancies_json)
+        else:
+            print('Передайте объект класса Vacancies. Запись не выполнена')
+
+    @staticmethod
+    def delete_vacancy_by_name(name, filename):
+        file_path = os.path.join("..", "data", f"{filename}")
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                data = file.read()
+                vacancies_list = json.loads(data)
+                new_vacancies_list = []
+                for vacancy in vacancies_list:
+                    if vacancy.get('name') != name:
+                        new_vacancies_list.append(vacancy)
+                if len(vacancies_list) == len(new_vacancies_list):
+                    print('Вакансия не была удалена. Проверьте имя вакансии')
+                else:
+                    print(f'Удалено {len(vacancies_list) - len(new_vacancies_list)} вакансии по запросу ({name})')
+            with open(file_path, 'w', encoding='utf-8') as fi:
+                vacancies_json = json.dumps(new_vacancies_list, ensure_ascii=False)
+                fi.write(vacancies_json)
+        except FileNotFoundError:
+            print(f"Файл с именем {filename} не найден")
+
+    def save_to_file_list_of_vacancies(self, vacancies, filename):
+        pass
+
+    def get_from_file_filtered_by_salary(self, salary, filename):
+        pass
+
+    @staticmethod
+    def get_all_from_file(filename):
+        file_path = os.path.join("..", "data", f"{filename}")
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                data = file.read()
+                vacancies_list = json.loads(data)
+                for n, vacancy in enumerate(vacancies_list, start=1):
+                    name = vacancy.get('name')
+                    url = vacancy.get('url')
+                    salary = vacancy.get('salary')
+                    salary_from = salary.get('from')
+                    salary_to = salary.get('to')
+                    currency = salary.get('currency')
+                    responsibility = vacancy.get('snippet')['responsibility']
+                    requirements = vacancy.get('snippet')['requirement']
+                    print(
+                        f"{n}: {Vacancies(name, url, salary_from, salary_to, currency, responsibility, requirements)}")
+        except FileNotFoundError:
+            print(f'Файл с именем {filename} не найден в папке data')
+
+
+# class FileManagerCSV(FileManager):
+#     """Класс для работы с файлами CSV"""
+
+# class FileManagerExcel(FileManager):
+#     """Класс для работы с файлами Excel"""
+
+# class FileManagerTXT(FileManager):
+#     """Класс для работы с файлами txt"""
 
 # hh = HeadHunterAPI()
 # for v in hh.get_vacancies('Python')[0:4]:
 #     print(v)
-#
-# v1 = Vacancies('Python-developer', 'url', 50000, 60000, 'RUB', '', '')
-# v2 = Vacancies('Java-developer', 'url', 40000, 50000, 'RUB', '', '')
+# hh.save_vacancies('Python', 'test.json')
+v1 = Vacancies('Python-developer', 'url', 50000, 60000, 'RUB', '', '')
+v2 = Vacancies('Java-developer', 'url', 40000, 50000, 'RUB', '', '')
 # v3 = Vacancies('Java-developer', 'url', '', 100000, 'RUB', '', '')
 #
 # print(Vacancies.compare_vacancies_by_salary(v1, v2))
 # print(Vacancies.compare_vacancies_by_salary(v1, v3))
 
-for n, i in enumerate(Vacancies.get_vacancies_from_hh('Python', 10), start=1):
-    print(f'{n}: {i}')
+# for n, i in enumerate(Vacancies.get_vacancies_from_hh('Python', 10), start=1):
+#     print(f'{n}: {i}')
+
+# #
+f = FileManagerJSON()
+# f.add_vacancy(v1, 'vacancies.json')
+# f.add_vacancy(v2, 'vacancies.json')
+
+# f.get_all_from_file('vacsfies.json')
+# f.get_all_from_file('vacancies.json')
+# f.get_all_from_file('test.json')
+# f.delete_vacancy_by_name('Python-developer', 'vacancies.json')
+# f.get_all_from_file('vacancies.json')
