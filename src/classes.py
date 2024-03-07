@@ -58,7 +58,7 @@ class HeadHunterAPI(APIBase):
         """Сохранить вакансии в json-файл"""
         get_vacancies_data = self.get_vacancies(query)
         if get_vacancies_data is not None and get_vacancies_data != [] and isinstance(get_vacancies_data, list):
-            file_path = os.path.join("..", "data", f"{filename}")
+            file_path = os.path.join("data", f"{filename}")
             with open(file_path, 'w+', encoding='utf-8') as file:
                 vacancies_json = json.dumps(get_vacancies_data, ensure_ascii=False)
                 file.write(vacancies_json)
@@ -112,11 +112,15 @@ class Vacancies:
             return False
 
     @staticmethod
-    def get_vacancies_from_hh(query, n):
+    def get_vacancies_from_hh(query, n=None):
         """Получение вакансий из HH. Преобразование. Вывод N числа вакансий по запросу query"""
         vacancies = HeadHunterAPI().get_vacancies(query)
         formatted_vacancies_list = []
-        for vacancy in vacancies[:n]:
+        if n is not None and isinstance(n, int) and n > 0:
+            search_vacancies = vacancies[:n]
+        else:
+            search_vacancies = vacancies
+        for vacancy in search_vacancies:
             name = vacancy.get('name')
             url = vacancy.get('alternate_url')
             salary = vacancy.get('salary')
@@ -127,6 +131,8 @@ class Vacancies:
             requirements = vacancy.get('snippet')['requirement']
             f_vacancy = Vacancies(name, url, salary_from, salary_to, currency, responsibility, requirements)
             formatted_vacancies_list.append(f_vacancy)
+        if len(formatted_vacancies_list) == 0:
+            print(f'Ничего не найдено по запросу "{query}"')
         return formatted_vacancies_list
 
     @staticmethod
@@ -185,7 +191,7 @@ class FileManagerJSON(FileManager):
     def add_vacancy(vacancy, filename):
         """Функция добавления вакансии в файл. Если файла нет, создается новый"""
         if isinstance(vacancy, Vacancies):
-            file_path = os.path.join("..", "data", f"{filename}")
+            file_path = os.path.join("data", f"{filename}")
             try:
                 with open(file_path, 'r', encoding='utf-8') as file:
                     data = file.read()
@@ -195,10 +201,10 @@ class FileManagerJSON(FileManager):
                 with open(file_path, 'w', encoding='utf-8') as fi:
                     vacancies_json = json.dumps(vacancies_list, ensure_ascii=False)
                     fi.write(vacancies_json)
-                    print('Вакансии записаны в файл в папку data')
+                    print(f'Вакансия записана в файл {filename} в папке data')
             except FileNotFoundError:
+                print(f'Файла {filename} не существует. Будет создан новый файл.')
                 with open(file_path, 'a+', encoding='utf-8') as file:
-                    print(f'Файла {filename} не существует. Будет создан новый файл.')
                     vacancies_json = json.dumps([vacancy.formatted_vacancy], ensure_ascii=False)
                     file.write(vacancies_json)
         else:
@@ -206,7 +212,7 @@ class FileManagerJSON(FileManager):
 
     @staticmethod
     def delete_vacancy_by_name(name, filename):
-        file_path = os.path.join("..", "data", f"{filename}")
+        file_path = os.path.join("data", f"{filename}")
         try:
             with open(file_path, 'r', encoding='utf-8') as file:
                 data = file.read()
@@ -233,7 +239,7 @@ class FileManagerJSON(FileManager):
 
     @staticmethod
     def get_all_from_file(filename):
-        file_path = os.path.join("..", "data", f"{filename}")
+        file_path = os.path.join("data", f"{filename}")
         try:
             with open(file_path, 'r', encoding='utf-8') as file:
                 data = file.read()
@@ -266,8 +272,8 @@ class FileManagerJSON(FileManager):
 # for v in hh.get_vacancies('Python')[0:4]:
 #     print(v)
 # hh.save_vacancies('Python', 'test.json')
-v1 = Vacancies('Python-developer', 'url', 50000, 60000, 'RUB', '', '')
-v2 = Vacancies('Java-developer', 'url', 40000, 50000, 'RUB', '', '')
+# v1 = Vacancies('Python-developer', 'url', 50000, 60000, 'RUB', '', '')
+# v2 = Vacancies('Java-developer', 'url', 40000, 50000, 'RUB', '', '')
 # v3 = Vacancies('Java-developer', 'url', '', 100000, 'RUB', '', '')
 #
 # print(Vacancies.compare_vacancies_by_salary(v1, v2))
@@ -277,7 +283,7 @@ v2 = Vacancies('Java-developer', 'url', 40000, 50000, 'RUB', '', '')
 #     print(f'{n}: {i}')
 
 # #
-f = FileManagerJSON()
+# f = FileManagerJSON()
 # f.add_vacancy(v1, 'vacancies.json')
 # f.add_vacancy(v2, 'vacancies.json')
 
