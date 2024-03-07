@@ -1,9 +1,4 @@
-from src.classes import HeadHunterAPI, Vacancies, FileManagerJSON
-
-
-def get_top_n_vacancies(vacancies, n=None):
-    """Получить топ N вакансий"""
-    pass
+from src.classes import Vacancies, FileManagerJSON
 
 
 def user_interaction():
@@ -26,16 +21,19 @@ def user_interaction():
                 n = int(n)
             except:
                 n = None
-            vacancy_list = Vacancies.get_vacancies_from_hh(query, n)
-            for n, vacancy in enumerate(vacancy_list, start=1):
-                print(f"{n}: {vacancy}")
-            if len(vacancy_list) > 0:
-                save_query = input('Желаете сохранить вакансии в файл? y/n: ')
-                if save_query == "y":
-                    file_name = input('Введите имя файла: ')
-                    file_manager = FileManagerJSON()
-                    for v in vacancy_list:
-                        file_manager.add_vacancy(v, file_name)
+            try:
+                vacancy_list = Vacancies.get_vacancies_from_hh(query, n)
+                for n, vacancy in enumerate(vacancy_list, start=1):
+                    print(f"{n}: {vacancy}")
+                if len(vacancy_list) > 0:
+                    save_query = input('Желаете сохранить вакансии в файл? y/n: ')
+                    if save_query == "y":
+                        file_name = input('Введите имя файла: ')
+                        file_manager = FileManagerJSON()
+                        for v in vacancy_list:
+                            file_manager.add_vacancy(v, file_name)
+            except ConnectionError:
+                print('Ошибка поиска. Попробуйте снова. Либо введите другой запрос')
         elif func == "2":
             file_manager1 = FileManagerJSON()
             add_or_delete_query = input("Добавить вакансию - add, Удалить вакансию - del: ")
